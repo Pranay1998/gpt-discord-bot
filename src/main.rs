@@ -7,10 +7,13 @@ use serenity::prelude::Context;
 use serenity::prelude::GatewayIntents;
 
 use std::env;
+use std::process;
 
 use rust_gpt::model::chat_message;
 use rust_gpt::model::chat_request;
 use rust_gpt::client::client::OpenAIClient;
+
+mod error;
 
 struct Handler {
     open_ai_client: OpenAIClient
@@ -39,14 +42,14 @@ impl EventHandler for Handler {
             // channel, so log to stdout when some error happens, with a
             // description of it.
             if let Err(why) = msg.channel_id.say(&ctx.http, "Pong!").await {
-                println!("Error sending message: {:?}", why);
+                eprintln!("Error sending message: {:?}", why);
             }
         } else if msg.content.starts_with("!ping gpt ") {
-            let question = msg.content.strip_prefix("!ping gpt ").unwrap();
+            let question = msg.content.strip_prefix("!ping gpt ").expect("Expected string to start with !ping gpt");
             
             let message = chat_message::Message {
                 role: chat_message::Role::User,
-                content: question.to_owned(),
+                content: question.to_string(),
             };
 
             let request = chat_request::ChatRequest {
@@ -65,11 +68,21 @@ impl EventHandler for Handler {
                 max_tokens: None,
             };
 
-            let response = self.open_ai_client.get_chat_completion(&request).await.unwrap();
-            let response: &str = rust_gpt::get_chat_message(&response, 0).unwrap();
+            let response = match self.open_ai_client.get_chat_completion(&request).await {
+                Ok(response) => response,
+                Err(why) => {
+                    eprint!("Error getting a response from ChatGpt: {:?}", why);
+                    process::exit(1)
+                },
+            };
 
-            if let Err(why) = msg.channel_id.say(&ctx.http, response).await {
-                println!("Error sending message: {:?}", why);
+            let message: &str = match rust_gpt::get_chat_message(&response, 0) {
+                Some(message) => message,
+                None => "Failed to get a response from ChatGPT"
+            };
+
+            if let Err(err) = msg.channel_id.say(&ctx.http, message).await {
+                eprintln!("Error sending message: {:?}", err);
             }
         }
     }
@@ -86,9 +99,9 @@ impl EventHandler for Handler {
 }
 
 #[tokio::main]
-async fn main() {
-    let discord_token = env::var("DISCORD_TOKEN").unwrap();
-    let openai_token = env::var("OPENAI_TOKEN").unwrap();
+async fn main() -> Result<(), error::ServerError> {
+    let discord_token = env::var("DISCORD_TOKEN")?;
+    let openai_token = env::var("OPENAI_TOKEN")?;
     // Set gateway intents, which decides what events the bot will be notified about
     let intents = GatewayIntents::GUILD_MESSAGES
         | GatewayIntents::DIRECT_MESSAGES
@@ -100,13 +113,12 @@ async fn main() {
     // automatically prepend your bot token with "Bot ", which is a requirement
     // by Discord for bot users.
     let mut client =
-        SerenityClient::builder(discord_token, intents).event_handler(handler).await.expect("Err creating client");
+        SerenityClient::builder(discord_token, intents).event_handler(handler).await?;
 
     // Finally, start a single shard, and start listening to events.
     //
     // Shards will automatically attempt to reconnect, and will perform
     // exponential backoff until it reconnects.
-    if let Err(why) = client.start().await {
-        println!("Client error: {:?}", why);
-    }
+    client.start().await?;
+    Ok(())
 }

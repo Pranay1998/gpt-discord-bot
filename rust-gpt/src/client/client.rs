@@ -1,4 +1,4 @@
-use crate::{constants, model::{chat_request, chat_response}, error::error};
+use crate::{constants, model::{chat_request, chat_response}, error};
 
 pub struct OpenAIClient {
     api_key: String,
