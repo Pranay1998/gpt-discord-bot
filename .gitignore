@@ -1,3 +1,3 @@
 /target
 /rust-gpt/target
-/rust-gpt/Cargo.toml
+/rust-gpt/Cargo.lock
