@@ -8,6 +8,8 @@ use serenity::prelude::GatewayIntents;
 
 use std::env;
 use std::process;
+use std::sync::Arc;
+use std::sync::Mutex;
 
 use rust_gpt::model::chat_message;
 use rust_gpt::model::chat_request;
@@ -16,13 +18,17 @@ use rust_gpt::client::client::OpenAIClient;
 mod error;
 
 struct Handler {
-    open_ai_client: OpenAIClient
+    open_ai_client: OpenAIClient,
+    system_prompt: Arc<Mutex<String>>,
+    default_prompt: String
 }
 
 impl Handler {
     pub fn new(open_ai_api_key: String) -> Handler {
         Handler {
-            open_ai_client: OpenAIClient::new(open_ai_api_key)
+            open_ai_client: OpenAIClient::new(open_ai_api_key),
+            system_prompt: Arc::new(Mutex::new(String::from("You are a bot that answers questions accurately."))),
+            default_prompt: String::from("You are a bot that answers questions accurately."),
         }
     }
 }
@@ -52,12 +58,22 @@ impl EventHandler for Handler {
                 content: question.to_string(),
             };
 
+            let system_prompt = {
+                match self.system_prompt.lock() {
+                    Ok(mutex_guard) => (*mutex_guard).clone(),
+                    Err(err) => {
+                        eprintln!("Error acquiring lock on system_prompt: {:?}", err);
+                        self.default_prompt.clone()
+                    }
+                }
+            };
+
             let request = chat_request::ChatRequest {
                 model: "gpt-3.5-turbo".to_string(),
                 messages: vec![
                     chat_message::Message {
                         role: chat_message::Role::System,
-                        content: "You are a bot that answers questions properly.".to_string(),
+                        content: system_prompt,
                     },
                     message
                 ],
@@ -82,6 +98,23 @@ impl EventHandler for Handler {
             };
 
             if let Err(err) = msg.channel_id.say(&ctx.http, message).await {
+                eprintln!("Error sending message: {:?}", err);
+            }
+        } else if msg.content.starts_with("!ping gpt prompt ") {
+            let new_prompt = msg.content.strip_prefix("!ping gpt prompt ").expect("Expected string to start with !ping gpt prompt");
+
+            let reply: String = match self.system_prompt.lock() {
+                Ok(mut mutex_guard) => {
+                    *mutex_guard = new_prompt.to_string();
+                    String::from("Successfully changed system prompt.")
+                },
+                Err(err) => {
+                    eprintln!("Error acquiring lock on system_prompt: {:?}", err);
+                    String::from("Something went wrong, could not change system prompt.")
+                }
+            };
+
+            if let Err(err) = msg.channel_id.say(&ctx.http, reply).await {
                 eprintln!("Error sending message: {:?}", err);
             }
         }
