@@ -333,7 +333,7 @@ dependencies = [
 name = "gpt-discord_bot"
 version = "0.1.0"
 dependencies = [
- "rust-gpt",
+ "ogpt",
  "serenity",
  "tokio",
 ]
@@ -641,6 +641,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "ogpt"
+version = "0.1.0"
+dependencies = [
+ "reqwest",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "once_cell"
 version = "1.17.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -877,15 +886,6 @@ dependencies = [
  "untrusted",
  "web-sys",
  "winapi",
-]
-
-[[package]]
-name = "rust-gpt"
-version = "0.1.0"
-dependencies = [
- "reqwest",
- "serde",
- "serde_json",
 ]
 
 [[package]]

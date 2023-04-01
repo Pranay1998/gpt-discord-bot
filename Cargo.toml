@@ -10,4 +10,4 @@ path = "src/main.rs"
 [dependencies]
 serenity = { version = "0.11", default-features = false, features=["client", "gateway", "rustls_backend", "model"] }
 tokio = { version = "1.21.2", features = ["full"] }
-rust-gpt = { path = "rust-gpt" }
+ogpt = { path = "ogpt" }

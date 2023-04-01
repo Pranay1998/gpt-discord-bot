@@ -11,14 +11,13 @@ use std::process;
 use std::sync::Arc;
 use std::sync::Mutex;
 
-use rust_gpt::model::chat_message;
-use rust_gpt::model::chat_request;
-use rust_gpt::client::client::OpenAIClient;
+use ogpt::model::chat_completions;
+use ogpt::client::OGptAsyncClient;
 
 mod error;
 
 struct Handler {
-    open_ai_client: OpenAIClient,
+    open_ai_client: OGptAsyncClient,
     system_prompt: Arc<Mutex<String>>,
     default_prompt: String
 }
@@ -26,7 +25,7 @@ struct Handler {
 impl Handler {
     pub fn new(open_ai_api_key: String) -> Handler {
         Handler {
-            open_ai_client: OpenAIClient::new(open_ai_api_key),
+            open_ai_client: OGptAsyncClient::new(open_ai_api_key),
             system_prompt: Arc::new(Mutex::new(String::from("You are a bot that answers questions accurately."))),
             default_prompt: String::from("You are a bot that answers questions accurately."),
         }
@@ -53,8 +52,8 @@ impl EventHandler for Handler {
         } else if msg.content.starts_with("!ping gpt ") {
             let question = msg.content.strip_prefix("!ping gpt ").expect("Expected string to start with !ping gpt");
             
-            let message = chat_message::Message {
-                role: chat_message::Role::User,
+            let message = chat_completions::Message {
+                role: chat_completions::Role::User,
                 content: question.to_string(),
             };
 
@@ -68,11 +67,11 @@ impl EventHandler for Handler {
                 }
             };
 
-            let request = chat_request::ChatRequest {
+            let request = chat_completions::ChatCompletionsRequest {
                 model: "gpt-3.5-turbo".to_string(),
                 messages: vec![
-                    chat_message::Message {
-                        role: chat_message::Role::System,
+                    chat_completions::Message {
+                        role: chat_completions::Role::System,
                         content: system_prompt,
                     },
                     message
@@ -84,7 +83,7 @@ impl EventHandler for Handler {
                 max_tokens: None,
             };
 
-            let response = match self.open_ai_client.get_chat_completion(&request).await {
+            let response = match self.open_ai_client.chat_completion_async(&request).await {
                 Ok(response) => response,
                 Err(why) => {
                     eprint!("Error getting a response from ChatGpt: {:?}", why);
@@ -92,7 +91,7 @@ impl EventHandler for Handler {
                 },
             };
 
-            let message: &str = match rust_gpt::get_chat_message(&response, 0) {
+            let message: &str = match ogpt::utils::get_chat_message(&response, 0) {
                 Some(message) => message,
                 None => "Failed to get a response from ChatGPT"
             };

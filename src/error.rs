@@ -1,15 +1,15 @@
 use std::env::VarError;
-use rust_gpt::error::RustGptError;
+use ogpt::error::OGptError;
 
 #[derive(Debug)]
 pub enum ServerError {
-    GptError(RustGptError),
+    GptError(OGptError),
     SerenityError(serenity::Error),
     EnvVarError(VarError)
 }
 
-impl From<RustGptError> for ServerError {
-    fn from(err: RustGptError) -> Self {
+impl From<OGptError> for ServerError {
+    fn from(err: OGptError) -> Self {
         ServerError::GptError(err)
     }
 }
