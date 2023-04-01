@@ -17,7 +17,7 @@ use ogpt::client::OGptAsyncClient;
 mod error;
 
 struct Handler {
-    open_ai_client: OGptAsyncClient,
+    ogpt_async_client: OGptAsyncClient,
     system_prompt: Arc<Mutex<String>>,
     default_prompt: String
 }
@@ -25,7 +25,7 @@ struct Handler {
 impl Handler {
     pub fn new(open_ai_api_key: String) -> Handler {
         Handler {
-            open_ai_client: OGptAsyncClient::new(open_ai_api_key),
+            ogpt_async_client: OGptAsyncClient::new(open_ai_api_key),
             system_prompt: Arc::new(Mutex::new(String::from("You are a bot that answers questions accurately."))),
             default_prompt: String::from("You are a bot that answers questions accurately."),
         }
@@ -74,7 +74,7 @@ impl EventHandler for Handler {
                 max_tokens: None,
             };
 
-            let response = match self.open_ai_client.chat_completion_async(&request).await {
+            let response = match self.ogpt_async_client.chat_completion_async(&request).await {
                 Ok(response) => response,
                 Err(why) => {
                     eprint!("Error getting a response from ChatGpt: {:?}", why);
@@ -90,8 +90,8 @@ impl EventHandler for Handler {
             if let Err(err) = msg.channel_id.say(&ctx.http, message).await {
                 eprintln!("Error sending message: {:?}", err);
             }
-        } else if msg.content.starts_with("!ping gpt prompt ") {
-            let new_prompt = msg.content.strip_prefix("!ping gpt prompt ").expect("Expected string to start with !ping gpt prompt");
+        } else if msg.content.starts_with("!ping gpt-prompt ") {
+            let new_prompt = msg.content.strip_prefix("!ping gpt-prompt ").expect("Expected string to start with !ping gpt prompt");
 
             let reply: String = match self.system_prompt.lock() {
                 Ok(mut mutex_guard) => {
@@ -124,7 +124,7 @@ async fn main() -> Result<(), error::ServerError> {
         | GatewayIntents::MESSAGE_CONTENT
         | GatewayIntents::GUILD_VOICE_STATES;
 
-        let handler = Handler::new(openai_token);
+    let handler = Handler::new(openai_token);
 
     let mut client =
         SerenityClient::builder(discord_token, intents).event_handler(handler).await?;

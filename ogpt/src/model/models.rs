@@ -1,8 +1,5 @@
 use serde::{Serialize, Deserialize};
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct ModelsRequest;
-
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct ModelsResponse {
     pub object: String,
@@ -17,7 +14,7 @@ pub struct Data {
     pub owned_by: String,
     pub permission: Vec<Permission>,
     pub root: String,
-    pub parent: String,
+    pub parent: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
@@ -32,6 +29,6 @@ pub struct Permission {
     pub allow_view: bool,
     pub allow_fine_tuning: bool,
     pub organization: String,
-    pub group: String,
+    pub group: Option<String>,
     pub is_blocking: bool,
 }
