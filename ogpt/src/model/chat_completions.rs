@@ -48,3 +48,54 @@ pub enum Role {
     System,
     User
 }
+
+impl ChatCompletionsRequest {
+    pub fn new(model: String, messages: Vec<Message>) -> Self {
+        ChatCompletionsRequest {
+            model,
+            messages,
+            temperature: None,
+            top_p: None,
+            n: None,
+            stream: None,
+            max_tokens: None
+        }
+    }
+
+    pub fn default(model: String, messages: Vec<Message>) -> Self {
+        ChatCompletionsRequest {
+            model,
+            messages,
+            temperature: Some(1_f64),
+            top_p: None,
+            n: Some(1_u64),
+            stream: Some(false),
+            max_tokens: None
+        }
+    }
+
+    pub fn temperature(mut self, temperature: f64) -> Self {
+        self.temperature = Some(temperature);
+        self
+    }
+
+    pub fn top_p(mut self, top_p: f64) -> Self {
+        self.top_p = Some(top_p);
+        self
+    }
+
+    pub fn n(mut self, n: u64) -> Self {
+        self.n = Some(n);
+        self
+    }
+
+    pub fn stream(mut self, stream: bool) -> Self {
+        self.stream = Some(stream);
+        self
+    }
+
+    pub fn max_tokens(mut self, max_tokens: u64) -> Self {
+        self.max_tokens = Some(max_tokens);
+        self
+    }
+}

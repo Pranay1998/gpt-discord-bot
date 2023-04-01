@@ -58,21 +58,15 @@ impl EventHandler for Handler {
                 }
             };
 
-            let request = chat_completions::ChatCompletionsRequest {
-                model: "gpt-3.5-turbo".to_string(),
-                messages: vec![
-                    chat_completions::Message {
-                        role: chat_completions::Role::System,
-                        content: system_prompt,
-                    },
-                    message
-                ],
-                temperature: Some(1_f64),
-                top_p: None,
-                stream: Some(false),
-                n: Some(1),
-                max_tokens: None,
-            };
+            let messages = vec![
+                chat_completions::Message {
+                    role: chat_completions::Role::System,
+                    content: system_prompt,
+                },
+                message
+            ];
+
+            let request = chat_completions::ChatCompletionsRequest::default(String::from("gpt-3.5-turbo"), messages);
 
             let response = match self.ogpt_async_client.chat_completion_async(&request).await {
                 Ok(response) => response,
