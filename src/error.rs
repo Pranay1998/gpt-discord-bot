@@ -3,14 +3,14 @@ use ogpt::error::OGptError;
 
 #[derive(Debug)]
 pub enum ServerError {
-    GptError(OGptError),
+    OGptError(OGptError),
     SerenityError(serenity::Error),
     EnvVarError(VarError)
 }
 
 impl From<OGptError> for ServerError {
     fn from(err: OGptError) -> Self {
-        ServerError::GptError(err)
+        ServerError::OGptError(err)
     }
 }
 
