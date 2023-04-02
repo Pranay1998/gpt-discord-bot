@@ -19,7 +19,7 @@ mod error;
 struct Handler {
     ogpt_async_client: OGptAsyncClient,
     system_prompt: Arc<Mutex<String>>,
-    default_prompt: String
+    default_prompt: String,
 }
 
 impl Handler {
@@ -81,7 +81,7 @@ impl EventHandler for Handler {
                 None => "Failed to get a response from ChatGPT"
             };
 
-            if let Err(err) = msg.channel_id.say(&ctx.http, message).await {
+            if let Err(err) = msg.reply(&ctx.http, message).await {
                 eprintln!("Error sending message: {:?}", err);
             }
         } else if msg.content.starts_with("!ping gpt-prompt ") {
@@ -100,6 +100,74 @@ impl EventHandler for Handler {
 
             if let Err(err) = msg.channel_id.say(&ctx.http, reply).await {
                 eprintln!("Error sending message: {:?}", err);
+            }
+        } else { // replies
+            let mut msg_list: Vec<chat_completions::Message> = vec![];
+            let mut cur_msg_option = Some(&msg);
+            let mut is_valid: bool = false;
+
+            while let Some(cur_msg) = cur_msg_option {
+                let first_question = msg.content.strip_prefix("!ping gpt ");
+                match first_question {
+                    Some(first_question) => {
+                        msg_list.push(
+                            chat_completions::Message {
+                                role: chat_completions::Role::User,
+                                content: first_question.to_string()
+                            }
+                        );
+                        is_valid = true;
+                        cur_msg_option = None;
+                    },
+                    None => {
+                        let role = if cur_msg.is_own(&ctx.cache) { 
+                            chat_completions::Role::Assistant
+                        } else {
+                            chat_completions::Role::User
+                        };
+
+                        msg_list.push(
+                            chat_completions::Message {
+                                role,
+                                content: cur_msg.content.to_string(),
+                            }
+                        );
+
+                        cur_msg_option = match &msg.referenced_message {
+                            Some(reference) => Some(reference),
+                            None => None,
+                        }
+                    },
+                }
+            }
+
+            msg_list.push(
+                chat_completions::Message {
+                    role: chat_completions::Role::System,
+                    content: self.default_prompt.to_owned()
+                }
+            );
+
+            if is_valid {
+                msg_list.reverse();
+                
+                let request = chat_completions::ChatCompletionsRequest::default(String::from("gpt-3.5-turbo"), msg_list);
+                let response = match self.ogpt_async_client.chat_completion_async(&request).await {
+                    Ok(response) => response,
+                    Err(why) => {
+                        eprint!("Error getting a response from ChatGpt: {:?}", why);
+                        process::exit(1)
+                    },
+                };
+
+                let message: &str = match ogpt::utils::get_chat_message(&response, 0) {
+                    Some(message) => message,
+                    None => "Failed to get a response from ChatGPT"
+                };
+
+                if let Err(err) = msg.channel_id.say(&ctx.http, message).await {
+                    eprintln!("Error sending message: {:?}", err);
+                }
             }
         }
     }
