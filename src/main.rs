@@ -21,7 +21,7 @@ mod error;
 
 struct Handler {
     ogpt_async_client: OGptAsyncClient,
-    message_cache: Arc<Mutex<LruCache<u64, Message>>>,
+    message_cache: Arc<Mutex<LruCache<u64, MessageLite>>>,
 }
 
 impl Handler {
@@ -32,21 +32,22 @@ impl Handler {
         }
     }
 
-    pub fn cache_message(&self, msg: Message) {
+    pub fn cache_message(&self, msg: &Message) {
         let mut r = self.message_cache.lock().unwrap();
-        r.put(msg.id.0, msg);
+        r.put(msg.id.0, MessageLite::from_msg(msg));
     }
 }
 
-struct MessageMetadata {
+#[derive(Clone, Debug)]
+struct MessageLite {
     ref_msg_id: Option<u64>,
     content: String,
     author_name: String,
 }
 
-impl MessageMetadata {
-    fn from_msg(msg: &Message) -> MessageMetadata {
-        MessageMetadata {
+impl MessageLite {
+    fn from_msg(msg: &Message) -> MessageLite {
+        MessageLite {
             ref_msg_id: msg.referenced_message.as_ref().map(|x| x.id.0),
             content: msg.content.to_owned(),
             author_name: msg.author.name.to_owned(),
@@ -93,7 +94,7 @@ impl EventHandler for Handler {
             }
         } else if msg.author.name != "tbot"  {
             let mut msg_list: Vec<chat_completions::Message> = vec![];
-            let mut cur_msg_option: Option<MessageMetadata> = Some(MessageMetadata::from_msg(&msg));
+            let mut cur_msg_option: Option<MessageLite> = Some(MessageLite::from_msg(&msg));
             let mut is_valid: bool = false;
 
             while let Some(cur_msg) = cur_msg_option {
@@ -128,7 +129,7 @@ impl EventHandler for Handler {
                                 let mut r = self.message_cache.lock().unwrap();
                                 let msg = r.get(ref_msg);
                                 if let Some(m) = msg {
-                                    Some(MessageMetadata::from_msg(m))
+                                    Some(m.clone())
                                 } else {
                                     None
                                 }
@@ -168,7 +169,7 @@ impl EventHandler for Handler {
                 }
             }
         }
-        self.cache_message(msg)
+        self.cache_message(&msg)
     }
 
     async fn ready(&self, _: Context, ready: Ready) {
