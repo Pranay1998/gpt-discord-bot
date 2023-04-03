@@ -36,6 +36,17 @@ impl Handler {
         let mut r = self.message_cache.lock().unwrap();
         r.put(msg.id.0, MessageLite::from_msg(msg));
     }
+
+    fn get_referenced(&self, msg: &MessageLite) -> Option<MessageLite> {
+        match &msg.ref_msg_id {
+            Some(ref_id) => {
+                let mut r = self.message_cache.lock().unwrap();
+                r.get(ref_id).map(|m| m.clone())
+            },
+            None => None
+        }
+
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -124,18 +135,7 @@ impl EventHandler for Handler {
                             }
                         );
 
-                        cur_msg_option = match &cur_msg.ref_msg_id {
-                            Some(ref_msg) => {
-                                let mut r = self.message_cache.lock().unwrap();
-                                let msg = r.get(ref_msg);
-                                if let Some(m) = msg {
-                                    Some(m.clone())
-                                } else {
-                                    None
-                                }
-                            }
-                            None => None
-                        };
+                        cur_msg_option = self.get_referenced(&cur_msg);
                     },
                 }
             }
