@@ -6,34 +6,35 @@ use serenity::prelude::EventHandler;
 use serenity::prelude::Context;
 use serenity::prelude::GatewayIntents;
 
-use std::collections::HashMap;
-
 use std::env;
+use std::num::NonZeroUsize;
 use std::process;
 use std::sync::Arc;
-use std::sync::RwLock;
+use std::sync::Mutex;
 
 use ogpt::model::chat_completions;
 use ogpt::client::OGptAsyncClient;
+
+use lru::LruCache;
 
 mod error;
 
 struct Handler {
     ogpt_async_client: OGptAsyncClient,
-    message_cache: Arc<RwLock<HashMap<u64, Message>>>,
+    message_cache: Arc<Mutex<LruCache<u64, Message>>>,
 }
 
 impl Handler {
-    pub fn new(open_api_key: String) -> Handler {
+    pub fn new(open_api_key: String, lru_cache_size: usize) -> Handler {
         Handler {
             ogpt_async_client: OGptAsyncClient::new(open_api_key),
-            message_cache: Arc::new(RwLock::new(HashMap::new()))
+            message_cache: Arc::new(Mutex::new(LruCache::new(NonZeroUsize::new(lru_cache_size).unwrap()))),
         }
     }
 
     pub fn cache_message(&self, msg: Message) {
-        let mut r = self.message_cache.write().unwrap();
-        r.insert(msg.id.0, msg);
+        let mut r = self.message_cache.lock().unwrap();
+        r.put(msg.id.0, msg);
     }
 }
 
@@ -108,7 +109,7 @@ impl EventHandler for Handler {
 
                         cur_msg_option = match &cur_msg.referenced_message {
                             Some(ref_msg) => {
-                                let r = self.message_cache.read().unwrap();
+                                let mut r = self.message_cache.lock().unwrap();
                                 let msg = r.get(&ref_msg.id.0);
                                 if let Some(m) = msg {
                                     Some(m.clone())
@@ -168,7 +169,7 @@ async fn main() -> Result<(), error::ServerError> {
         | GatewayIntents::MESSAGE_CONTENT
         | GatewayIntents::GUILD_VOICE_STATES;
 
-    let handler = Handler::new(openai_token);
+    let handler = Handler::new(openai_token, 50);
 
     let mut client =
         SerenityClient::builder(discord_token, intents).event_handler(handler).await?;
