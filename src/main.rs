@@ -38,6 +38,22 @@ impl Handler {
     }
 }
 
+struct MessageMetadata {
+    ref_msg_id: Option<u64>,
+    content: String,
+    author_name: String,
+}
+
+impl MessageMetadata {
+    fn from_msg(msg: &Message) -> MessageMetadata {
+        MessageMetadata {
+            ref_msg_id: msg.referenced_message.as_ref().map(|x| x.id.0),
+            content: msg.content.to_owned(),
+            author_name: msg.author.name.to_owned(),
+        }
+    }
+}
+
 #[async_trait]
 impl EventHandler for Handler {
     async fn message(&self, ctx: Context, msg: Message) {
@@ -77,7 +93,7 @@ impl EventHandler for Handler {
             }
         } else if msg.author.name != "tbot"  {
             let mut msg_list: Vec<chat_completions::Message> = vec![];
-            let mut cur_msg_option: Option<Message> = Some(msg.clone());
+            let mut cur_msg_option: Option<MessageMetadata> = Some(MessageMetadata::from_msg(&msg));
             let mut is_valid: bool = false;
 
             while let Some(cur_msg) = cur_msg_option {
@@ -94,7 +110,7 @@ impl EventHandler for Handler {
                         cur_msg_option = None;
                     },
                     None => {
-                        let role = if cur_msg.author.name == "tbot" { 
+                        let role = if cur_msg.author_name == "tbot" { 
                             chat_completions::Role::Assistant
                         } else {
                             chat_completions::Role::User
@@ -107,12 +123,12 @@ impl EventHandler for Handler {
                             }
                         );
 
-                        cur_msg_option = match &cur_msg.referenced_message {
+                        cur_msg_option = match &cur_msg.ref_msg_id {
                             Some(ref_msg) => {
                                 let mut r = self.message_cache.lock().unwrap();
-                                let msg = r.get(&ref_msg.id.0);
+                                let msg = r.get(ref_msg);
                                 if let Some(m) = msg {
-                                    Some(m.clone())
+                                    Some(MessageMetadata::from_msg(m))
                                 } else {
                                     None
                                 }
