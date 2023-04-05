@@ -71,7 +71,7 @@ impl MessageLite {
 #[async_trait]
 impl EventHandler for Handler {
     async fn message(&self, ctx: Context, msg: Message) {
-        if msg.content.starts_with("!ping gpt") {
+        if msg.content.starts_with("!ping gpt ") {
             let question = msg.content.strip_prefix("!ping gpt ").expect("Expected string to start with !ping gpt");
             
             let message = chat_completions::Message {
@@ -112,6 +112,16 @@ impl EventHandler for Handler {
             };
 
             if let Err(err) = msg.reply(&ctx.http, message).await {
+                eprintln!("Error sending message: {:?}", err);
+            }
+        } else if msg.content.starts_with("!ping gpt-prompt ") {
+            let prompt = msg.content.strip_prefix("!ping gpt-prompt ").expect("Expected string to start with !ping gpt prompt");
+            if prompt.len() > 0 {
+                let mut r = self.prompt.lock().unwrap();
+                *r = Some(prompt.to_string());
+            }
+
+            if let Err(err) = msg.reply(&ctx.http, "Prompt set!").await {
                 eprintln!("Error sending message: {:?}", err);
             }
         } else if msg.author.name != "tbot"  {
@@ -188,16 +198,6 @@ impl EventHandler for Handler {
                     eprintln!("Error sending message: {:?}", err);
                 }
             } 
-        } else if msg.content.starts_with("!ping gpt-prompt ") {
-            let prompt = msg.content.strip_prefix("!ping gpt-prompt ").expect("Expected string to start with !ping gpt prompt");
-            if prompt.len() > 0 {
-                let mut r = self.prompt.lock().unwrap();
-                *r = Some(prompt.to_string());
-            }
-
-            if let Err(err) = msg.reply(&ctx.http, "Prompt set!").await {
-                eprintln!("Error sending message: {:?}", err);
-            }
         }
         
         self.cache_message(&msg)
