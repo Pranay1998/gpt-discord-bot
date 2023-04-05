@@ -22,6 +22,7 @@ mod error;
 struct Handler {
     ogpt_async_client: OGptAsyncClient,
     message_cache: Arc<Mutex<LruCache<u64, MessageLite>>>,
+    prompt: Arc<Mutex<Option<String>>>,
 }
 
 impl Handler {
@@ -29,6 +30,7 @@ impl Handler {
         Handler {
             ogpt_async_client: OGptAsyncClient::new(open_api_key),
             message_cache: Arc::new(Mutex::new(LruCache::new(NonZeroUsize::new(lru_cache_size).unwrap()))),
+            prompt: Arc::new(Mutex::new(None)),
         }
     }
 
@@ -77,10 +79,19 @@ impl EventHandler for Handler {
                 content: question.to_string(),
             };
 
+            let content = {
+                let r = self.prompt.lock().unwrap();
+                let prompt = r.clone();
+                match prompt {
+                    Some(prompt) => prompt,
+                    None => String::from("You are a bot that answers questions accurately."),
+                }
+            };
+
             let messages = vec![
                 chat_completions::Message {
                     role: chat_completions::Role::System,
-                    content: String::from("You are a bot that answers questions accurately."),
+                    content,
                 },
                 message
             ];
@@ -140,10 +151,19 @@ impl EventHandler for Handler {
                 }
             }
 
+            let content = {
+                let r = self.prompt.lock().unwrap();
+                let prompt = r.clone();
+                match prompt {
+                    Some(prompt) => prompt,
+                    None => String::from("You are a bot that answers questions accurately."),
+                }
+            };
+
             msg_list.push(
                 chat_completions::Message {
                     role: chat_completions::Role::System,
-                    content: String::from("You are a bot that answers questions accurately."),
+                    content: content,
                 }
             );
 
@@ -167,8 +187,19 @@ impl EventHandler for Handler {
                 if let Err(err) = msg.reply(&ctx.http, message).await {
                     eprintln!("Error sending message: {:?}", err);
                 }
+            } 
+        } else if msg.content.starts_with("!ping gpt-prompt ") {
+            let prompt = msg.content.strip_prefix("!ping gpt-prompt ").expect("Expected string to start with !ping gpt prompt");
+            if prompt.len() > 0 {
+                let mut r = self.prompt.lock().unwrap();
+                *r = Some(prompt.to_string());
+            }
+
+            if let Err(err) = msg.reply(&ctx.http, "Prompt set!").await {
+                eprintln!("Error sending message: {:?}", err);
             }
         }
+        
         self.cache_message(&msg)
     }
 
