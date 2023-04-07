@@ -3,7 +3,9 @@ use serenity::model::channel::Message;
 use serenity::model::gateway::Ready;
 use serenity::prelude::EventHandler;
 use serenity::prelude::Context;
+use serenity::prelude::RwLock;
 
+use std::collections::HashSet;
 use std::num::NonZeroUsize;
 use std::sync::Arc;
 use std::sync::Mutex;
@@ -15,6 +17,7 @@ use lru::LruCache;
 use crate::command;
 
 pub struct Handler {
+    pub user_ids: RwLock<HashSet<u64>>,
     pub ogpt_async_client: OGptAsyncClient,
     pub message_cache: Arc<Mutex<LruCache<u64, MessageLite>>>,
     pub prompt: Arc<Mutex<Option<String>>>,
@@ -23,6 +26,7 @@ pub struct Handler {
 impl Handler {
     pub fn new(open_api_key: String, lru_cache_size: usize) -> Handler {
         Handler {
+            user_ids: RwLock::new(HashSet::new()),
             ogpt_async_client: OGptAsyncClient::new(open_api_key),
             message_cache: Arc::new(Mutex::new(LruCache::new(NonZeroUsize::new(lru_cache_size).unwrap()))),
             prompt: Arc::new(Mutex::new(None)),
@@ -67,19 +71,20 @@ impl MessageLite {
 impl EventHandler for Handler {
     async fn message(&self, ctx: Context, msg: Message) {
         for command in command::get_commands() {
-            if command.matches(&msg) {
+            if command.matches(self, &msg).await {
                 if let Err(err) = command.handle(self, &ctx, &msg).await {
                     if let Err(err) = msg.channel_id.say(&ctx.http, format!("Error handling command - {}", err)).await {
                         eprintln!("Error sending error message - {}", err);
                     }
                 }
                 break;
-            }   
+            }
         }
         self.cache_message(&msg);        
     }
 
     async fn ready(&self, _: Context, ready: Ready) {
         println!("{} is connected!", ready.user.name);
+        self.user_ids.write().await.insert(ready.user.id.0);
     }
 }

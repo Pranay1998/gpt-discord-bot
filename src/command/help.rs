@@ -30,7 +30,7 @@ impl Command for Help {
         USAGE_EXAMPLE
     }
 
-    fn matches(&self, msg: &Message) -> bool {
+    async fn matches(&self, _handler: &Handler, msg: &Message) -> bool {
         msg.content == "!help"
     }
 

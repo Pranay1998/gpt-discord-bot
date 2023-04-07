@@ -31,8 +31,8 @@ impl Command for GptReply {
         USAGE_EXAMPLE
     }
 
-    fn matches(&self, msg: &Message) -> bool {
-        msg.author.name != "tbot"
+    async fn matches(&self, handler: &Handler, msg: &Message) -> bool {
+        !handler.user_ids.write().await.contains(&msg.author.id.0)
     }
 
     async fn handle(&self, handler: &Handler, ctx: &Context, msg: &Message) -> Result<(), ServerError> {

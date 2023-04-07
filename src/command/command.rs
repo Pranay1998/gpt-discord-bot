@@ -10,6 +10,6 @@ pub trait Command : Sync + Debug {
     fn get_command(&self) -> &str;
     fn get_description(&self) -> &str;
     fn get_usage_example(&self) -> &str;
-    fn matches(&self, msg: &Message) -> bool;
+    async fn matches(&self, handler: &Handler, msg: &Message) -> bool;
     async fn handle(&self, handler: &Handler, ctx: &Context, msg: &Message) -> Result<(), ServerError>;
 }

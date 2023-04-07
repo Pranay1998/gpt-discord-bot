@@ -31,7 +31,7 @@ impl Command for Gpt {
         USAGE_EXAMPLE
     }
 
-    fn matches(&self, msg: &Message) -> bool {
+    async fn matches(&self, _handler: &Handler, msg: &Message) -> bool {
         msg.content.starts_with(&format!("{}{}", self.get_prefix(), self.get_command()))
     }
 
