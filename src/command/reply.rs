@@ -3,12 +3,10 @@ use serenity::{async_trait, prelude::Context, model::prelude::Message};
 
 use crate::{ServerError, handler::Handler, handler::MessageLite};
 
-use super::{Command, CommandError};
+use super::{Command, CommandError, gpt};
 
-const PREFIX: &str = "";
-const COMMAND: &str = "";
-const DESCRIPTION: &str = "After getting a response from ChatGPT, you can reply to continue the conversation";
-const USAGE_EXAMPLE: &str = "<reply>";
+pub const DESCRIPTION: &str = "After getting a response from ChatGPT, you can reply to continue the conversation";
+pub const USAGE_EXAMPLE: &str = "<reply>";
 
 #[derive(Debug)]
 pub struct GptReply;
@@ -16,11 +14,11 @@ pub struct GptReply;
 #[async_trait]
 impl Command for GptReply {
     fn get_prefix(&self) -> &'static str {
-        PREFIX
+        ""
     }
 
     fn get_command(&self) -> &'static str {
-        COMMAND
+        ""
     }
 
     fn get_description(&self) -> &'static str {
@@ -32,7 +30,7 @@ impl Command for GptReply {
     }
 
     async fn matches(&self, handler: &Handler, msg: &Message) -> bool {
-        !handler.user_ids.write().await.contains(&msg.author.id.0)
+        !handler.is_own_msg(msg).await
     }
 
     async fn handle(&self, handler: &Handler, ctx: &Context, msg: &Message) -> Result<(), ServerError> {
@@ -41,7 +39,7 @@ impl Command for GptReply {
         let mut is_valid: bool = false;
 
         while let Some(cur_msg) = cur_msg_option {
-            let first_question = cur_msg.content.strip_prefix("!gpt");
+            let first_question = cur_msg.content.strip_prefix(gpt::FULL_COMMAND);
             match first_question {
                 Some(first_question) => {
                     msg_list.push(
@@ -54,7 +52,7 @@ impl Command for GptReply {
                     cur_msg_option = None;
                 },
                 None => {
-                    let role = if cur_msg.author_name == "tbot" { 
+                    let role = if handler.is_own_msg(msg).await {
                         chat_completions::Role::Assistant
                     } else {
                         chat_completions::Role::User
@@ -67,7 +65,7 @@ impl Command for GptReply {
                         }
                     );
 
-                    cur_msg_option = handler.get_referenced(&cur_msg);
+                    cur_msg_option = handler.get_referenced_from_cache(&cur_msg);
                 },
             }
         }
@@ -82,8 +80,7 @@ impl Command for GptReply {
         if is_valid {
             msg_list.reverse();
             
-            let request = chat_completions::ChatCompletionsRequest::default(String::from("gpt-3.5-turbo"), msg_list);
-            let response = handler.ogpt_async_client.chat_completion_async(&request).await?;
+            let response = handler.get_gpt_response(msg_list).await?;
 
             let message: &str = match ogpt::utils::get_chat_message(&response, 0) {
                 Some(message) => message,

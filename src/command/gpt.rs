@@ -5,11 +5,11 @@ use crate::{ServerError, handler::Handler};
 
 use super::{Command, CommandError};
 
-const PREFIX: &str = "!";
-const COMMAND: &str = "gpt";
-const FULL_COMMAND: &str = "!gpt";
-const DESCRIPTION: &str = "Ask any question. A response will be generated using ChatGPT";
-const USAGE_EXAMPLE: &str = "!gpt <question>";
+pub const PREFIX: &str = "!";
+pub const COMMAND: &str = "gpt";
+pub const FULL_COMMAND: &str = "!gpt";
+pub const DESCRIPTION: &str = "Ask any question. A response will be generated using ChatGPT";
+pub const USAGE_EXAMPLE: &str = "!gpt <question>";
 
 #[derive(Debug)]
 pub struct Gpt;
@@ -50,15 +50,13 @@ impl Command for Gpt {
             }
         ];
 
-        let request = chat_completions::ChatCompletionsRequest::default(String::from("gpt-3.5-turbo"), messages);
-
-        let response = handler.ogpt_async_client.chat_completion_async(&request).await?;
+        let response = handler.get_gpt_response(messages).await?;
 
         let message: &str = match ogpt::utils::get_chat_message(&response, 0) {
             Some(message) => message,
             None => {
                 return Err(ServerError::CommandError(
-                    CommandError::new(self.get_command().to_owned(), String::from("Failed to get a response from ChatGPT")))
+                    CommandError::new(self.get_command().to_owned(), String::from("Failed to get 0th choice from response")))
                 ); 
             }
         };

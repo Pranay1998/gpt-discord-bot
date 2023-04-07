@@ -4,11 +4,11 @@ use crate::{ServerError, handler::Handler};
 
 use super::Command;
 
-const PREFIX: &str = "!";
-const COMMAND: &str = "gpt-prompt";
-const FULL_COMMAND: &str = "!gpt-prompt";
-const DESCRIPTION: &str = "Set the system prompt for ChatGPT new questions";
-const USAGE_EXAMPLE: &str = "!gpt-prompt <prompt>";
+pub const PREFIX: &str = "!";
+pub const COMMAND: &str = "gpt-prompt";
+pub const FULL_COMMAND: &str = "!gpt-prompt";
+pub const DESCRIPTION: &str = "Set the system prompt for ChatGPT new questions";
+pub const USAGE_EXAMPLE: &str = "!gpt-prompt <prompt>";
 
 #[derive(Debug)]
 pub struct GptPrompt;

@@ -4,11 +4,11 @@ use crate::{ServerError, handler::Handler};
 
 use super::Command;
 
-const PREFIX: &str = "!";
-const COMMAND: &str = "ping";
-const FULL_COMMAND: &str = "!ping";
-const DESCRIPTION: &str = "Returns Pong!";
-const USAGE_EXAMPLE: &str = "!ping";
+pub const PREFIX: &str = "!";
+pub const COMMAND: &str = "ping";
+pub const FULL_COMMAND: &str = "!ping";
+pub const DESCRIPTION: &str = "Returns Pong!";
+pub const USAGE_EXAMPLE: &str = "!ping";
 
 #[derive(Debug)]
 pub struct Ping;

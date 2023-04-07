@@ -7,11 +7,11 @@ use super::{Command, get_commands_for_help};
 #[derive(Debug)]
 pub struct Help;
 
-const PREFIX: &str = "!";
-const COMMAND: &str = "help";
-const FULL_COMMAND: &str = "!help";
-const DESCRIPTION: &str = "Returns a list of commands";
-const USAGE_EXAMPLE: &str = "!help";
+pub const PREFIX: &str = "!";
+pub const COMMAND: &str = "help";
+pub const FULL_COMMAND: &str = "!help";
+pub const DESCRIPTION: &str = "Returns a list of commands";
+pub const USAGE_EXAMPLE: &str = "!help";
 
 #[async_trait]
 impl Command for Help {

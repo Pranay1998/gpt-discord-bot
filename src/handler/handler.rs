@@ -1,3 +1,4 @@
+use ogpt::model::chat_completions;
 use serenity::async_trait;
 use serenity::model::channel::Message;
 use serenity::model::gateway::Ready;
@@ -14,12 +15,13 @@ use ogpt::client::OGptAsyncClient;
 
 use lru::LruCache;
 
+use crate::ServerError;
 use crate::command;
 
 pub struct Handler {
-    pub user_ids: RwLock<HashSet<u64>>,
-    pub ogpt_async_client: OGptAsyncClient,
-    pub message_cache: Arc<Mutex<LruCache<u64, MessageLite>>>,
+    user_ids: RwLock<HashSet<u64>>,
+    ogpt_async_client: OGptAsyncClient,
+    message_cache: Arc<Mutex<LruCache<u64, MessageLite>>>,
     prompt: Arc<Mutex<String>>,
 }
 
@@ -43,7 +45,7 @@ impl Handler {
         r.put(msg.id.0, MessageLite::from_msg(msg));
     }
 
-    pub fn get_referenced(&self, msg: &MessageLite) -> Option<MessageLite> {
+    pub fn get_referenced_from_cache(&self, msg: &MessageLite) -> Option<MessageLite> {
         match &msg.ref_msg_id {
             Some(ref_id) => {
                 let mut r = self.message_cache.lock().unwrap();
@@ -53,13 +55,33 @@ impl Handler {
         }
     }
 
+    pub fn get_prompt(&self) -> String {
+        self.prompt.lock().unwrap().to_owned()
+    }
+
     pub fn set_prompt(&self, prompt: String) {
         let mut r = self.prompt.lock().unwrap();
         *r = prompt;
     }
 
-    pub fn get_prompt(&self) -> String {
-        self.prompt.lock().unwrap().to_owned()
+    pub async fn is_own_msg(&self, msg: &Message) -> bool {
+        let r = self.user_ids.read().await;
+        r.contains(&msg.author.id.0)
+    }
+
+    pub async fn add_user_id(&self, user_id: u64) {
+        let mut r = self.user_ids.write().await;
+        r.insert(user_id);
+    }
+
+    pub async fn get_gpt_response(&self, messages: Vec<chat_completions::Message>) -> Result<chat_completions::ChatCompletionsResponse, ServerError> {
+        let response = self
+            .ogpt_async_client
+            .chat_completion_async(
+                &chat_completions::ChatCompletionsRequest::default(
+                    String::from("gpt-3.5-turbo"), messages))
+            .await?;
+        Ok(response)
     }
 }
 
@@ -98,6 +120,6 @@ impl EventHandler for Handler {
 
     async fn ready(&self, _: Context, ready: Ready) {
         println!("{} is connected!", ready.user.name);
-        self.user_ids.write().await.insert(ready.user.id.0);
+        self.add_user_id(ready.user.id.0).await;
     }
 }
