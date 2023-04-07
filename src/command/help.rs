@@ -9,6 +9,7 @@ pub struct Help;
 
 const PREFIX: &str = "!";
 const COMMAND: &str = "help";
+const FULL_COMMAND: &str = "!help";
 const DESCRIPTION: &str = "Returns a list of commands";
 const USAGE_EXAMPLE: &str = "!help";
 
@@ -31,7 +32,7 @@ impl Command for Help {
     }
 
     async fn matches(&self, _handler: &Handler, msg: &Message) -> bool {
-        msg.content == "!help"
+        msg.content == FULL_COMMAND
     }
 
     async fn handle(&self, _handler: &Handler, ctx: &Context, msg: &Message) -> Result<(), ServerError> {

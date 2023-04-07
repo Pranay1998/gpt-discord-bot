@@ -5,16 +5,16 @@ use crate::{ServerError, handler::Handler};
 use super::Command;
 
 const PREFIX: &str = "!";
-const COMMAND: &str = "ping";
-const FULL_COMMAND: &str = "!ping";
-const DESCRIPTION: &str = "Returns Pong!";
-const USAGE_EXAMPLE: &str = "!ping";
+const COMMAND: &str = "gpt-prompt";
+const FULL_COMMAND: &str = "!gpt-prompt";
+const DESCRIPTION: &str = "Set the system prompt for ChatGPT new questions";
+const USAGE_EXAMPLE: &str = "!gpt-prompt <prompt>";
 
 #[derive(Debug)]
-pub struct Ping;
+pub struct GptPrompt;
 
 #[async_trait]
-impl Command for Ping {
+impl Command for GptPrompt {
     fn get_prefix(&self) -> &'static str {
         PREFIX
     }
@@ -32,11 +32,12 @@ impl Command for Ping {
     }
 
     async fn matches(&self, _handler: &Handler, msg: &Message) -> bool {
-        msg.content == FULL_COMMAND
+        msg.content.starts_with(FULL_COMMAND)
     }
 
-    async fn handle(&self, _handler: &Handler, ctx: &Context, msg: &Message) -> Result<(), ServerError> {
-        msg.channel_id.say(&ctx.http, "Pong!").await?;
+    async fn handle(&self, handler: &Handler, _ctx: &Context, msg: &Message) -> Result<(), ServerError> {
+        let prompt = msg.content.strip_prefix(FULL_COMMAND).unwrap().trim();
+        handler.set_prompt(prompt.to_string());
         Ok(())
     }
 }

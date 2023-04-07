@@ -72,12 +72,10 @@ impl Command for GptReply {
             }
         }
 
-        let content = String::from("You are a bot that answers questions accurately.");
-
         msg_list.push(
             chat_completions::Message {
                 role: chat_completions::Role::System,
-                content,
+                content: handler.get_prompt(),
             }
         );
 

@@ -20,16 +20,21 @@ pub struct Handler {
     pub user_ids: RwLock<HashSet<u64>>,
     pub ogpt_async_client: OGptAsyncClient,
     pub message_cache: Arc<Mutex<LruCache<u64, MessageLite>>>,
-    pub prompt: Arc<Mutex<Option<String>>>,
+    prompt: Arc<Mutex<String>>,
 }
 
 impl Handler {
-    pub fn new(open_api_key: String, lru_cache_size: usize) -> Handler {
+    pub fn new(open_api_key: String, lru_cache_size: usize, default_prompt: Option<String>) -> Handler {
+        let prompt = match default_prompt {
+            Some(prompt) => prompt,
+            None => String::from("You are a bot that answers questions accurately."),
+        };
+
         Handler {
             user_ids: RwLock::new(HashSet::new()),
             ogpt_async_client: OGptAsyncClient::new(open_api_key),
             message_cache: Arc::new(Mutex::new(LruCache::new(NonZeroUsize::new(lru_cache_size).unwrap()))),
-            prompt: Arc::new(Mutex::new(None)),
+            prompt: Arc::new(Mutex::new(prompt)),
         }
     }
 
@@ -46,7 +51,15 @@ impl Handler {
             },
             None => None
         }
+    }
 
+    pub fn set_prompt(&self, prompt: String) {
+        let mut r = self.prompt.lock().unwrap();
+        *r = prompt;
+    }
+
+    pub fn get_prompt(&self) -> String {
+        self.prompt.lock().unwrap().to_owned()
     }
 }
 
