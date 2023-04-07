@@ -35,9 +35,10 @@ impl Command for GptPrompt {
         msg.content.starts_with(FULL_COMMAND)
     }
 
-    async fn handle(&self, handler: &Handler, _ctx: &Context, msg: &Message) -> Result<(), ServerError> {
+    async fn handle(&self, handler: &Handler, ctx: &Context, msg: &Message) -> Result<(), ServerError> {
         let prompt = msg.content.strip_prefix(FULL_COMMAND).unwrap().trim();
         handler.set_prompt(prompt.to_string());
+        msg.channel_id.say(&ctx.http, "Prompt set").await?;
         Ok(())
     }
 }
