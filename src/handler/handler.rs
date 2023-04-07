@@ -68,11 +68,10 @@ impl EventHandler for Handler {
     async fn message(&self, ctx: Context, msg: Message) {
         for command in command::get_commands() {
             if command.matches(&msg) {
-                match command.handle(self, &ctx, &msg).await {
-                    Ok(_) => {},
-                    Err(err) => {
-                        let _ = msg.channel_id.say(&ctx.http, format!("Error handling command - {}", err)).await;
-                    },
+                if let Err(err) = command.handle(self, &ctx, &msg).await {
+                    if let Err(err) = msg.channel_id.say(&ctx.http, format!("Error handling command - {}", err)).await {
+                        eprintln!("Error sending error message - {}", err);
+                    }
                 }
                 break;
             }   
