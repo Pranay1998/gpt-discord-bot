@@ -1,5 +1,6 @@
 mod error;
 mod handler;
+mod command;
 
 pub use error::ServerError;
 use serenity::prelude::GatewayIntents;
