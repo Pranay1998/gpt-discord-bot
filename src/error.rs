@@ -17,7 +17,7 @@ impl fmt::Display for ServerError {
             ServerError::OGptError(err) => write!(f, "OGpt error: {}", err),
             ServerError::SerenityError(err) => write!(f, "Serenity error: {}", err),
             ServerError::EnvVarError(err) => write!(f, "Env var error: {}", err),
-            ServerError::CommandError(err) => write!(f, "Generic error: {}", err),
+            ServerError::CommandError(err) => write!(f, "Command error: {}", err.to_string()),
         }
     }
 }

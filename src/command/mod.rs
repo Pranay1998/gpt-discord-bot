@@ -5,6 +5,7 @@ mod reply;
 mod help;
 mod error;
 mod prompt;
+mod play;
 
 pub use command::Command;
 pub use error::CommandError;
@@ -13,12 +14,14 @@ use gpt::Gpt;
 use reply::GptReply;
 use help::Help;
 use prompt::GptPrompt;
+use play::Play;
 
 static COMMANDS: &'static [&dyn Command] = &[
     &Ping,
     &Gpt,
     &Help,
     &GptPrompt,
+    &Play,
     &GptReply, // This matches all messages not sent by the bot, so it should be last
 ];
 
@@ -27,7 +30,8 @@ static COMMANDS_HELP: &'static [&dyn Command] = &[
     &Ping,
     &GptPrompt,
     &Gpt,
-    &GptReply, // This matches all messages not sent by the bot, so it should be last
+    &GptReply,
+    &Play,
 ];
 
 pub fn get_commands() -> &'static [&'static dyn Command] {

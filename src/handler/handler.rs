@@ -23,6 +23,7 @@ pub struct Handler {
     ogpt_async_client: OGptAsyncClient,
     message_cache: Arc<Mutex<LruCache<u64, MessageLite>>>,
     prompt: Arc<Mutex<String>>,
+    pub default_voice_channel: Arc<RwLock<Option<u64>>>,
 }
 
 impl Handler {
@@ -37,6 +38,7 @@ impl Handler {
             ogpt_async_client: OGptAsyncClient::new(open_api_key),
             message_cache: Arc::new(Mutex::new(LruCache::new(NonZeroUsize::new(lru_cache_size).unwrap()))),
             prompt: Arc::new(Mutex::new(prompt)),
+            default_voice_channel: Arc::new(RwLock::new(None)),
         }
     }
 
@@ -108,7 +110,7 @@ impl EventHandler for Handler {
         for command in command::get_commands() {
             if command.matches(self, &msg).await {
                 if let Err(err) = command.handle(self, &ctx, &msg).await {
-                    if let Err(err) = msg.channel_id.say(&ctx.http, format!("Error handling command - {}", err)).await {
+                    if let Err(err) = msg.channel_id.say(&ctx.http, format!("{}", err)).await {
                         eprintln!("Error sending error message - {}", err);
                     }
                 }
