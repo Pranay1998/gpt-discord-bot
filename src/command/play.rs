@@ -64,9 +64,9 @@ impl Command for Play {
             if let Some(handler_lock) = manager.get(guild_id) {
                 let mut handler = handler_lock.lock().await;
                 let source = songbird::ytdl(url).await.unwrap();
-                let handle = handler.play_only_source(source);
-                handle.set_volume(1_f32).unwrap();
-                handle.play().unwrap();
+                let _handle = handler.play_only_source(source);
+            } else {
+                return Err(ServerError::CommandError(CommandError::new(COMMAND.to_owned(), String::from("Cannot acquire handler"))));
             }
         } else {
             return Err(ServerError::CommandError(CommandError::new(COMMAND.to_owned(), String::from("No voice channel found"))));
