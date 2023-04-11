@@ -5,6 +5,8 @@ use serenity::model::gateway::Ready;
 use serenity::prelude::EventHandler;
 use serenity::prelude::Context;
 use serenity::prelude::RwLock;
+use songbird::input::Input;
+use songbird::tracks::TrackHandle;
 
 use std::collections::HashSet;
 use std::num::NonZeroUsize;
@@ -24,6 +26,9 @@ pub struct Handler {
     message_cache: Arc<Mutex<LruCache<u64, MessageLite>>>,
     prompt: Arc<Mutex<String>>,
     pub default_voice_channel: Arc<RwLock<Option<u64>>>,
+    pub audio_playing: Arc<Mutex<bool>>,
+    pub audio_queue: Arc<Mutex<Vec<Input>>>,
+    pub track_handle: Arc<Mutex<Option<TrackHandle>>>,
 }
 
 impl Handler {
@@ -39,6 +44,9 @@ impl Handler {
             message_cache: Arc::new(Mutex::new(LruCache::new(NonZeroUsize::new(lru_cache_size).unwrap()))),
             prompt: Arc::new(Mutex::new(prompt)),
             default_voice_channel: Arc::new(RwLock::new(None)),
+            audio_playing: Arc::new(Mutex::new(false)),
+            audio_queue: Arc::new(Mutex::new(vec![])),
+            track_handle: Arc::new(Mutex::new(None)),
         }
     }
 
