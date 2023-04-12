@@ -2,13 +2,13 @@ use ogpt::model::chat_completions;
 use serenity::async_trait;
 use serenity::model::channel::Message;
 use serenity::model::gateway::Ready;
+use serenity::model::voice::VoiceState;
 use serenity::prelude::EventHandler;
 use serenity::prelude::Context;
 use serenity::prelude::RwLock;
-use songbird::input::Input;
-use songbird::tracks::TrackHandle;
 
 use std::collections::HashSet;
+use std::collections::VecDeque;
 use std::num::NonZeroUsize;
 use std::sync::Arc;
 use std::sync::Mutex;
@@ -25,10 +25,7 @@ pub struct Handler {
     ogpt_async_client: OGptAsyncClient,
     message_cache: Arc<Mutex<LruCache<u64, MessageLite>>>,
     prompt: Arc<Mutex<String>>,
-    pub default_voice_channel: Arc<RwLock<Option<u64>>>,
-    pub audio_playing: Arc<Mutex<bool>>,
-    pub audio_queue: Arc<Mutex<Vec<Input>>>,
-    pub track_handle: Arc<Mutex<Option<TrackHandle>>>,
+    voice_states: Arc<Mutex<VecDeque<VoiceState>>>,
 }
 
 impl Handler {
@@ -43,10 +40,7 @@ impl Handler {
             ogpt_async_client: OGptAsyncClient::new(open_api_key),
             message_cache: Arc::new(Mutex::new(LruCache::new(NonZeroUsize::new(lru_cache_size).unwrap()))),
             prompt: Arc::new(Mutex::new(prompt)),
-            default_voice_channel: Arc::new(RwLock::new(None)),
-            audio_playing: Arc::new(Mutex::new(false)),
-            audio_queue: Arc::new(Mutex::new(vec![])),
-            track_handle: Arc::new(Mutex::new(None)),
+            voice_states: Arc::new(Mutex::new(VecDeque::with_capacity(100))),
         }
     }
 
@@ -93,6 +87,19 @@ impl Handler {
             .await?;
         Ok(response)
     }
+
+    pub async fn get_voice_state_for_user(&self, user_id: u64) -> Option<VoiceState> {
+        let r = self.voice_states.lock().unwrap();
+        r.iter().find(|x| x.user_id.0 == user_id).map(|x| x.clone())
+    }
+
+    pub async fn add_voice_state(&self, voice_state: VoiceState) {
+        let mut r = self.voice_states.lock().unwrap();
+        r.push_back(voice_state);
+        if r.len() > 100 {
+            r.pop_front();
+        }
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -131,5 +138,9 @@ impl EventHandler for Handler {
     async fn ready(&self, _: Context, ready: Ready) {
         println!("{} is connected!", ready.user.name);
         self.add_user_id(ready.user.id.0).await;
+    }
+
+    async fn voice_state_update(&self, _: Context, voice_state: VoiceState) {
+        self.add_voice_state(voice_state).await;
     }
 }

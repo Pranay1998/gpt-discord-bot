@@ -1,4 +1,4 @@
-use serenity::{async_trait, prelude::Context, model::prelude::{Message, ChannelType}};
+use serenity::{async_trait, prelude::Context, model::prelude::Message};
 
 use crate::{ServerError, handler::Handler};
 
@@ -13,6 +13,22 @@ pub const USAGE_EXAMPLE: &str = "!join";
 #[derive(Debug)]
 pub struct Join;
 
+pub async fn join_channel(command: &dyn Command, handler: &Handler, ctx: &Context, msg: &Message) -> Result<(), ServerError> {
+    let user_id = msg.author.id.0;
+    let guild_id =  match msg.guild_id {
+        Some(guild_id) => guild_id,
+        None => return command.command_error("This command can only be used in a guild".to_owned()),
+    };
+
+    match handler.get_voice_state_for_user(user_id).await.map(|vs| vs.channel_id).unwrap_or(None) {
+        Some(channel_id) => {            
+            let manager = songbird::get(ctx).await.expect("Songbird not initialized").clone();
+            manager.join(guild_id, channel_id).await.1?;
+        },
+        None => return command.command_error("You must be in a voice channel to use this command".to_owned()),
+    }
+    Ok(())
+}
 
 #[async_trait]
 impl Command for Join {
@@ -37,17 +53,6 @@ impl Command for Join {
     }
 
     async fn handle(&self, handler: &Handler, ctx: &Context, msg: &Message) -> Result<(), ServerError> {
-        let guild_id = msg.guild_id.unwrap();
-        let mut def_voice_channel = handler.default_voice_channel.write().await;
-
-        if def_voice_channel.is_none() {
-            *def_voice_channel = Some(ctx.http.get_channels(guild_id.0).await.unwrap().iter().find(|x| x.kind == ChannelType::Voice).unwrap().id.0);
-        }
-        
-        let channel_id = def_voice_channel.unwrap();
-        let manager = songbird::get(ctx).await.unwrap().clone();
-
-        manager.join(guild_id, channel_id).await.1.unwrap();
-        Ok(())
+        join_channel(self, handler, ctx, msg).await
     }
 }

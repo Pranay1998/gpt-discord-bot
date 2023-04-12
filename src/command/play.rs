@@ -3,7 +3,7 @@ use songbird::input::{Restartable, Input};
 
 use crate::{ServerError, handler::Handler};
 
-use super::Command;
+use super::{Command, join_channel};
 
 pub const PREFIX: &str = "!";
 pub const COMMAND: &str = "play";
@@ -36,20 +36,29 @@ impl Command for Play {
         msg.content.starts_with(FULL_COMMAND)
     }
 
-    async fn handle(&self, _: &Handler, ctx: &Context, msg: &Message) -> Result<(), ServerError> {
-        let search_string = msg.content.strip_prefix(FULL_COMMAND).unwrap().trim().to_owned();
-        let guild_id = msg.guild_id.unwrap();
+    async fn handle(&self, handler: &Handler, ctx: &Context, msg: &Message) -> Result<(), ServerError> {
+        join_channel(self, handler, ctx, msg).await?;
 
-        let manager = songbird::get(ctx).await.unwrap().clone();
-        let handler = manager.get(guild_id).unwrap();
+        let search_string = msg.content.strip_prefix(FULL_COMMAND).unwrap().trim().to_owned();
+        let guild_id = match msg.guild_id {
+            Some(id) => id,
+            None => return self.command_error(String::from("This command can only be used in a guild")),
+        };
+
+        let manager = songbird::get(ctx).await.expect("Songbird not initialized").clone();
+        let handler = manager.get(guild_id).expect("No handler found");
         let mut handler = handler.lock().await;
 
-        let source = Restartable::ytdl_search(search_string, true).await.unwrap();
+        let source =  Restartable::ytdl_search(search_string, true).await?;
         let source: Input = source.into();
-        
-        msg.channel_id.say(&ctx.http, format!("Added song to the queue {}", source.metadata.source_url.clone().unwrap())).await.unwrap();
 
-        handler.enqueue_source(source);
+        match source.metadata.source_url.clone() {
+            Some(url) => {
+                msg.channel_id.say(&ctx.http, format!("Added to the queue {}", url)).await?;
+                handler.enqueue_source(source);
+            },
+            None => return self.command_error(String::from("No source url found")),
+        }
         
         Ok(())
     }

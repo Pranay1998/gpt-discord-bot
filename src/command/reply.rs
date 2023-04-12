@@ -3,7 +3,7 @@ use serenity::{async_trait, prelude::Context, model::prelude::Message};
 
 use crate::{ServerError, handler::Handler, handler::MessageLite};
 
-use super::{Command, CommandError, gpt};
+use super::{Command, gpt};
 
 pub const DESCRIPTION: &str = "After getting a response from ChatGPT, you can reply to continue the conversation";
 pub const USAGE_EXAMPLE: &str = "<reply>";
@@ -85,9 +85,7 @@ impl Command for GptReply {
             let message: &str = match ogpt::utils::get_chat_message(&response, 0) {
                 Some(message) => message,
                 None => {
-                    return Err(ServerError::CommandError(
-                        CommandError::new(self.get_command().to_owned(), String::from("Failed to get 0th choice from response")))
-                    );
+                    return self.command_error(String::from("Failed to get 0th choice from response"));
                 }
             };
 

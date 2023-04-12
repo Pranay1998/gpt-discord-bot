@@ -19,6 +19,7 @@ use prompt::GptPrompt;
 use play::Play;
 use join::Join;
 use skip::Skip;
+pub use join::join_channel;
 
 static COMMANDS: &'static [&dyn Command] = &[
     &Ping,
