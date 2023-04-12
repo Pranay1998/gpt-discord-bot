@@ -8,6 +8,9 @@ mod prompt;
 mod play;
 mod join;
 mod skip;
+mod pause;
+mod resume;
+mod stop;
 
 pub use command::Command;
 pub use error::CommandError;
@@ -19,6 +22,9 @@ use prompt::GptPrompt;
 use play::Play;
 use join::Join;
 use skip::Skip;
+use pause::Pause;
+use resume::Resume;
+use stop::Stop;
 pub use join::join_channel;
 
 static COMMANDS: &'static [&dyn Command] = &[
@@ -28,6 +34,9 @@ static COMMANDS: &'static [&dyn Command] = &[
     &GptPrompt,
     &Join,
     &Play,
+    &Pause,
+    &Resume,
+    &Stop,
     &Skip,
     &GptReply, // This matches all messages not sent by the bot, so it should be last
 ];
@@ -40,6 +49,9 @@ static COMMANDS_HELP: &'static [&dyn Command] = &[
     &GptReply,
     &Join,
     &Play,
+    &Pause,
+    &Resume,
+    &Stop,
     &Skip,
 ];
 

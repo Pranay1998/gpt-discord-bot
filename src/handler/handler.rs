@@ -90,7 +90,7 @@ impl Handler {
 
     pub async fn get_voice_state_for_user(&self, user_id: u64) -> Option<VoiceState> {
         let r = self.voice_states.lock().unwrap();
-        r.iter().find(|x| x.user_id.0 == user_id).map(|x| x.clone())
+        r.iter().rev().find(|x| x.user_id.0 == user_id).map(|x| x.clone())
     }
 
     pub async fn add_voice_state(&self, voice_state: VoiceState) {

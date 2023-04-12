@@ -5,16 +5,16 @@ use crate::{ServerError, handler::Handler};
 use super::Command;
 
 pub const PREFIX: &str = "!";
-pub const COMMAND: &str = "skip";
-pub const FULL_COMMAND: &str = "!skip";
-pub const DESCRIPTION: &str = "Skip to next song in queue";
-pub const USAGE_EXAMPLE: &str = "!skip";
+pub const COMMAND: &str = "resume";
+pub const FULL_COMMAND: &str = "!resume";
+pub const DESCRIPTION: &str = "Reusme paused song";
+pub const USAGE_EXAMPLE: &str = "!resume";
 
 #[derive(Debug)]
-pub struct Skip;
+pub struct Resume;
 
 #[async_trait]
-impl Command for Skip {
+impl Command for Resume {
     fn get_prefix(&self) -> &'static str {
         PREFIX
     }
@@ -41,8 +41,7 @@ impl Command for Skip {
         let manager = songbird::get(ctx).await.unwrap().clone();
         let handler = manager.get(guild_id).unwrap();
         let handler = handler.lock().await;
-        let queue = handler.queue();
-        queue.skip().unwrap();
+        handler.queue().resume()?;
         Ok(())
     }
 }

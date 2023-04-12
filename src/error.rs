@@ -1,5 +1,6 @@
 use std::{env::VarError, fmt, error};
 use ogpt::error::OGptError;
+use songbird::tracks::TrackError;
 
 use crate::command::CommandError;
 
@@ -10,7 +11,8 @@ pub enum ServerError {
     SerenityError(serenity::Error),
     EnvVarError(VarError),
     SongbirdInputError(songbird::input::error::Error),
-    VoiceChannelJoinError(songbird::error::JoinError)
+    VoiceChannelJoinError(songbird::error::JoinError),
+    TrackError(songbird::tracks::TrackError),
 }
 
 impl fmt::Display for ServerError {
@@ -22,6 +24,7 @@ impl fmt::Display for ServerError {
             ServerError::CommandError(err) => write!(f, "Command error: {}", err.to_string()),
             ServerError::SongbirdInputError(err) => write!(f, "Songbird input error: {}", err),
             ServerError::VoiceChannelJoinError(err) => write!(f, "Voice channel join error: {}", err),
+            ServerError::TrackError(err) => write!(f, "Track error: {}", err),
         }
     }
 }
@@ -62,6 +65,12 @@ impl From<songbird::error::JoinError> for ServerError {
     }
 }
 
+impl From<TrackError> for ServerError {
+    fn from(err: TrackError) -> Self {
+        ServerError::TrackError(err)
+    }
+}
+
 impl error::Error for  ServerError {
     fn cause(&self) -> Option<&dyn error::Error> {
         match self {
@@ -71,6 +80,7 @@ impl error::Error for  ServerError {
             ServerError::CommandError(err) => Some(err),
             ServerError::SongbirdInputError(err) => Some(err),
             ServerError::VoiceChannelJoinError(err) => Some(err),
+            ServerError::TrackError(err) => Some(err),
         }
     }
 
@@ -82,6 +92,7 @@ impl error::Error for  ServerError {
             ServerError::CommandError(err) => err.source(),
             ServerError::SongbirdInputError(err) => err.source(),
             ServerError::VoiceChannelJoinError(err) => err.source(),
+            ServerError::TrackError(err) => err.source(),
         }
     }
 }
