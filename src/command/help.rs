@@ -31,11 +31,11 @@ impl Command for Help {
         USAGE_EXAMPLE
     }
 
-    async fn matches(&self, _handler: &Handler, msg: &Message) -> bool {
+    async fn matches(&self, msg: &Message) -> bool {
         msg.content == FULL_COMMAND
     }
 
-    async fn handle(&self, _handler: &Handler, ctx: &Context, msg: &Message) -> Result<(), ServerError> {
+    async fn handle(&self, _: &Handler, ctx: &Context, msg: &Message) -> Result<(), ServerError> {
         let mut commands = String::new();
         for command in get_commands_for_help() {
             commands.push_str(&format!("{} - {}\n", command.get_usage_example(), command.get_description()));

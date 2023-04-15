@@ -12,7 +12,7 @@ name = "lib"
 path = "src/lib.rs"
 
 [dependencies]
-serenity = { version = "0.11", default-features = false, features=["client", "gateway", "rustls_backend", "model", "voice"] }
+serenity = { version = "0.11", default-features = false, features=["client", "gateway", "rustls_backend", "model", "voice", "cache"] }
 tokio = { version = "1.21.2", features = ["full"] }
 ogpt = { path = "ogpt" }
 lru = "0.10.0"

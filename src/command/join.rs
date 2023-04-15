@@ -13,19 +13,26 @@ pub const USAGE_EXAMPLE: &str = "!join";
 #[derive(Debug)]
 pub struct Join;
 
-pub async fn join_channel(command: &dyn Command, handler: &Handler, ctx: &Context, msg: &Message) -> Result<(), ServerError> {
-    let user_id = msg.author.id.0;
-    let guild_id =  match msg.guild_id {
-        Some(guild_id) => guild_id,
-        None => return command.command_error("This command can only be used in a guild".to_owned()),
-    };
+pub async fn join_channel(command: &dyn Command, ctx: &Context, msg: &Message) -> Result<(), ServerError> {
+    match msg.guild(&ctx.cache) {
+        Some(guild) => {
+            let guild_id = guild.id;
 
-    match handler.get_voice_state_for_user(user_id).await.map(|vs| vs.channel_id).unwrap_or(None) {
-        Some(channel_id) => {            
-            let manager = songbird::get(ctx).await.expect("Songbird not initialized").clone();
-            manager.join(guild_id, channel_id).await.1?;
+            let channel_id = guild
+                .voice_states
+                .get(&msg.author.id)
+                .and_then(|voice_state| voice_state.channel_id);
+
+            match channel_id {
+                Some(channel_id) => {
+                    let manager = songbird::get(ctx).await.expect("Songbird not initialized").clone();
+                    manager.join(guild_id, channel_id).await.1?;
+                },
+                None => return command.command_error("You must be in a voice channel to use this command".to_owned()),
+            }
+
         },
-        None => return command.command_error("You must be in a voice channel to use this command".to_owned()),
+        None => return command.command_error(String::from("Failed to get channel details")),
     }
     Ok(())
 }
@@ -48,11 +55,11 @@ impl Command for Join {
         USAGE_EXAMPLE
     }
 
-    async fn matches(&self, _handler: &Handler, msg: &Message) -> bool {
+    async fn matches(&self, msg: &Message) -> bool {
         msg.content.starts_with(FULL_COMMAND)
     }
 
-    async fn handle(&self, handler: &Handler, ctx: &Context, msg: &Message) -> Result<(), ServerError> {
-        join_channel(self, handler, ctx, msg).await
+    async fn handle(&self, _: &Handler, ctx: &Context, msg: &Message) -> Result<(), ServerError> {
+        join_channel(self, ctx, msg).await
     }
 }

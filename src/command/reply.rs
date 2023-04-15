@@ -29,8 +29,8 @@ impl Command for GptReply {
         USAGE_EXAMPLE
     }
 
-    async fn matches(&self, handler: &Handler, msg: &Message) -> bool {
-        !handler.is_own_msg(msg).await
+    async fn matches(&self, _msg: &Message) -> bool {
+        true
     }
 
     async fn handle(&self, handler: &Handler, ctx: &Context, msg: &Message) -> Result<(), ServerError> {
@@ -52,7 +52,7 @@ impl Command for GptReply {
                     cur_msg_option = None;
                 },
                 None => {
-                    let role = if handler.is_own_msg(msg).await {
+                    let role = if msg.is_own(&ctx.cache) {
                         chat_completions::Role::Assistant
                     } else {
                         chat_completions::Role::User

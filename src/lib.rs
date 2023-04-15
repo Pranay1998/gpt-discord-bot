@@ -14,7 +14,7 @@ pub async fn start_server(discord_token: String, openai_token: String) -> Result
         | GatewayIntents::MESSAGE_CONTENT
         | GatewayIntents::GUILD_VOICE_STATES;
 
-    let handler = handler::Handler::new(openai_token, 50, None);
+    let handler = handler::Handler::new(openai_token, 350, None);
 
     let mut client =
         SerenityClient::builder(discord_token, intents)

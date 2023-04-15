@@ -31,11 +31,11 @@ impl Command for Ping {
         USAGE_EXAMPLE
     }
 
-    async fn matches(&self, _handler: &Handler, msg: &Message) -> bool {
+    async fn matches(&self, msg: &Message) -> bool {
         msg.content == FULL_COMMAND
     }
 
-    async fn handle(&self, _handler: &Handler, ctx: &Context, msg: &Message) -> Result<(), ServerError> {
+    async fn handle(&self, _: &Handler, ctx: &Context, msg: &Message) -> Result<(), ServerError> {
         msg.channel_id.say(&ctx.http, "Pong!").await?;
         Ok(())
     }

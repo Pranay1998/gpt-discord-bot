@@ -2,13 +2,8 @@ use ogpt::model::chat_completions;
 use serenity::async_trait;
 use serenity::model::channel::Message;
 use serenity::model::gateway::Ready;
-use serenity::model::voice::VoiceState;
 use serenity::prelude::EventHandler;
 use serenity::prelude::Context;
-use serenity::prelude::RwLock;
-
-use std::collections::HashSet;
-use std::collections::VecDeque;
 use std::num::NonZeroUsize;
 use std::sync::Arc;
 use std::sync::Mutex;
@@ -21,11 +16,9 @@ use crate::ServerError;
 use crate::command;
 
 pub struct Handler {
-    user_ids: RwLock<HashSet<u64>>,
     ogpt_async_client: OGptAsyncClient,
     message_cache: Arc<Mutex<LruCache<u64, MessageLite>>>,
     prompt: Arc<Mutex<String>>,
-    voice_states: Arc<Mutex<VecDeque<VoiceState>>>,
 }
 
 impl Handler {
@@ -36,11 +29,9 @@ impl Handler {
         };
 
         Handler {
-            user_ids: RwLock::new(HashSet::new()),
             ogpt_async_client: OGptAsyncClient::new(open_api_key),
             message_cache: Arc::new(Mutex::new(LruCache::new(NonZeroUsize::new(lru_cache_size).unwrap()))),
             prompt: Arc::new(Mutex::new(prompt)),
-            voice_states: Arc::new(Mutex::new(VecDeque::with_capacity(100))),
         }
     }
 
@@ -68,16 +59,6 @@ impl Handler {
         *r = prompt;
     }
 
-    pub async fn is_own_msg(&self, msg: &Message) -> bool {
-        let r = self.user_ids.read().await;
-        r.contains(&msg.author.id.0)
-    }
-
-    pub async fn add_user_id(&self, user_id: u64) {
-        let mut r = self.user_ids.write().await;
-        r.insert(user_id);
-    }
-
     pub async fn get_gpt_response(&self, messages: Vec<chat_completions::Message>) -> Result<chat_completions::ChatCompletionsResponse, ServerError> {
         let response = self
             .ogpt_async_client
@@ -86,19 +67,6 @@ impl Handler {
                     String::from("gpt-3.5-turbo"), messages))
             .await?;
         Ok(response)
-    }
-
-    pub async fn get_voice_state_for_user(&self, user_id: u64) -> Option<VoiceState> {
-        let r = self.voice_states.lock().unwrap();
-        r.iter().rev().find(|x| x.user_id.0 == user_id).map(|x| x.clone())
-    }
-
-    pub async fn add_voice_state(&self, voice_state: VoiceState) {
-        let mut r = self.voice_states.lock().unwrap();
-        r.push_back(voice_state);
-        if r.len() > 100 {
-            r.pop_front();
-        }
     }
 }
 
@@ -122,8 +90,12 @@ impl MessageLite {
 #[async_trait]
 impl EventHandler for Handler {
     async fn message(&self, ctx: Context, msg: Message) {
+        if msg.author.bot {
+            return;
+        }
+
         for command in command::get_commands() {
-            if command.matches(self, &msg).await {
+            if command.matches(&msg).await {
                 if let Err(err) = command.handle(self, &ctx, &msg).await {
                     if let Err(err) = msg.channel_id.say(&ctx.http, format!("{}", err)).await {
                         eprintln!("Error sending error message - {}", err);
@@ -137,10 +109,5 @@ impl EventHandler for Handler {
 
     async fn ready(&self, _: Context, ready: Ready) {
         println!("{} is connected!", ready.user.name);
-        self.add_user_id(ready.user.id.0).await;
-    }
-
-    async fn voice_state_update(&self, _: Context, voice_state: VoiceState) {
-        self.add_voice_state(voice_state).await;
     }
 }

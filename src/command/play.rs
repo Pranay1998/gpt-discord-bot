@@ -32,12 +32,12 @@ impl Command for Play {
         USAGE_EXAMPLE
     }
 
-    async fn matches(&self, _handler: &Handler, msg: &Message) -> bool {
+    async fn matches(&self, msg: &Message) -> bool {
         msg.content.starts_with(FULL_COMMAND)
     }
 
-    async fn handle(&self, handler: &Handler, ctx: &Context, msg: &Message) -> Result<(), ServerError> {
-        join_channel(self, handler, ctx, msg).await?;
+    async fn handle(&self, _: &Handler, ctx: &Context, msg: &Message) -> Result<(), ServerError> {
+        join_channel(self, ctx, msg).await?;
 
         let search_string = msg.content.strip_prefix(FULL_COMMAND).unwrap().trim().to_owned();
         let guild_id = match msg.guild_id {

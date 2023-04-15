@@ -31,7 +31,7 @@ impl Command for GptPrompt {
         USAGE_EXAMPLE
     }
 
-    async fn matches(&self, _handler: &Handler, msg: &Message) -> bool {
+    async fn matches(&self, msg: &Message) -> bool {
         msg.content.starts_with(FULL_COMMAND)
     }
 
