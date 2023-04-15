@@ -15,6 +15,8 @@ use lru::LruCache;
 use crate::ServerError;
 use crate::command;
 
+pub const GPT_DEFAULT_SYSTEM_PROMPT: &str = "You are a bot that answers questions accurately.";
+
 pub struct Handler {
     ogpt_async_client: OGptAsyncClient,
     message_cache: Arc<Mutex<LruCache<u64, MessageLite>>>,
@@ -25,7 +27,7 @@ impl Handler {
     pub fn new(open_api_key: String, lru_cache_size: usize, default_prompt: Option<String>) -> Handler {
         let prompt = match default_prompt {
             Some(prompt) => prompt,
-            None => String::from("You are a bot that answers questions accurately."),
+            None => String::from(GPT_DEFAULT_SYSTEM_PROMPT),
         };
 
         Handler {
