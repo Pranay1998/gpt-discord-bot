@@ -92,12 +92,9 @@ impl MessageLite {
 #[async_trait]
 impl EventHandler for Handler {
     async fn message(&self, ctx: Context, msg: Message) {
-        if msg.author.bot {
-            return;
-        }
 
         for command in command::get_commands() {
-            if command.matches(&msg).await {
+            if msg.author.bot && command.matches(&msg).await {
                 if let Err(err) = command.handle(self, &ctx, &msg).await {
                     if let Err(err) = msg.channel_id.say(&ctx.http, format!("{}", err)).await {
                         eprintln!("Error sending error message - {}", err);
