@@ -7,7 +7,7 @@ use super::Command;
 pub const PREFIX: &str = "!";
 pub const COMMAND: &str = "join";
 pub const FULL_COMMAND: &str = "!join";
-pub const DESCRIPTION: &str = "Join a random voice channel";
+pub const DESCRIPTION: &str = "Join voice channel that you are currently in.";
 pub const USAGE_EXAMPLE: &str = "!join";
 
 #[derive(Debug)]

@@ -8,8 +8,8 @@ use super::{Command, join_channel};
 pub const PREFIX: &str = "!";
 pub const COMMAND: &str = "play";
 pub const FULL_COMMAND: &str = "!play";
-pub const DESCRIPTION: &str = "Plays a song from Youtubel";
-pub const USAGE_EXAMPLE: &str = "!play <url>";
+pub const DESCRIPTION: &str = "Joins current channel and adds the song to the queue";
+pub const USAGE_EXAMPLE: &str = "!play <song name>";
 
 #[derive(Debug)]
 pub struct Play;

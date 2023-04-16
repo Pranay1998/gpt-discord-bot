@@ -38,9 +38,20 @@ impl Command for Help {
     async fn handle(&self, _: &Handler, ctx: &Context, msg: &Message) -> Result<(), ServerError> {
         let mut commands = String::new();
         for command in get_commands_for_help() {
-            commands.push_str(&format!("{} - {}\n", command.get_usage_example(), command.get_description()));
+            commands.push_str(&format!("`{}` **- {}**\n\n", command.get_usage_example(), command.get_description()));
         }
-        msg.channel_id.say(&ctx.http, commands).await?;
+
+        let mut embed = serenity::builder::CreateEmbed::default();
+
+        embed
+            .title("Help")
+            .description(commands)
+            .color(0x90_EE_90); // You can set the desired color here
+
+        msg.channel_id.send_message(&ctx.http, |m| {
+            m.set_embed(embed.to_owned()) 
+        }).await?;
+
         Ok(())
     }
 }
