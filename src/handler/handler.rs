@@ -37,9 +37,9 @@ impl Handler {
         }
     }
 
-    pub fn cache_message(&self, msg: &Message) {
+    pub fn cache_message(&self, msg: &Message, ctx: &Context) {
         let mut r = self.message_cache.lock().unwrap();
-        r.put(msg.id.0, MessageLite::from_msg(msg));
+        r.put(msg.id.0, MessageLite::from_msg(msg, ctx));
     }
 
     pub fn get_referenced_from_cache(&self, msg: &MessageLite) -> Option<MessageLite> {
@@ -77,14 +77,16 @@ pub struct MessageLite {
     pub ref_msg_id: Option<u64>,
     pub content: String,
     pub author_name: String,
+    pub is_own: bool,
 }
 
 impl MessageLite {
-    pub fn from_msg(msg: &Message) -> MessageLite {
+    pub fn from_msg(msg: &Message, ctx: &Context) -> MessageLite {
         MessageLite {
             ref_msg_id: msg.referenced_message.as_ref().map(|x| x.id.0),
             content: msg.content.to_owned(),
             author_name: msg.author.name.to_owned(),
+            is_own: msg.is_own(&ctx.cache),
         }
     }
 }
@@ -103,7 +105,7 @@ impl EventHandler for Handler {
                 break;
             }
         }
-        self.cache_message(&msg);        
+        self.cache_message(&msg, &ctx);        
     }
 
     async fn ready(&self, _: Context, ready: Ready) {
