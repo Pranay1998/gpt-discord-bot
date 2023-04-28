@@ -2,3 +2,4 @@
 /ogpt/target
 /ogpt/Cargo.lock
 /.vscode
+.env
