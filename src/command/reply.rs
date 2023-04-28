@@ -41,7 +41,6 @@ impl Command for GptReply {
 
         while let Some(cur_msg) = cur_msg_option {
             let is_own = cur_msg.is_own;
-            println!("is_own: {}, expecting_own_msg: {}", is_own, expecting_own_msg);
             if is_own != expecting_own_msg || (!is_own && msg.author.bot) { break; }
             let first_question = cur_msg.content.strip_prefix(gpt::FULL_COMMAND);
             match first_question {
