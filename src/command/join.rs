@@ -30,7 +30,7 @@ pub async fn join_channel(command: &dyn Command, ctx: &Context, msg: &Message) -
                     
                     manager.join(guild_id, channel_id).await.1?;
                     tokio::spawn(async move {
-                        let mut backoff_seconds = 30;
+                        let backoff_seconds = 300;
                         let handler = manager.get(guild_id).expect("No handler found");
 
                         loop {
@@ -38,8 +38,6 @@ pub async fn join_channel(command: &dyn Command, ctx: &Context, msg: &Message) -
                             if handler.lock().await.queue().is_empty() {
                                 manager.remove(guild_id).await.expect("Cannot leave");
                                 break;
-                            } else {
-                                backoff_seconds = backoff_seconds * 2;
                             }
                         }
 
