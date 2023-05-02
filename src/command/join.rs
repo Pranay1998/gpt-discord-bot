@@ -1,3 +1,4 @@
+use tokio::time::{Duration, sleep};
 use serenity::{async_trait, prelude::Context, model::prelude::Message};
 
 use crate::{ServerError, handler::Handler};
@@ -26,7 +27,23 @@ pub async fn join_channel(command: &dyn Command, ctx: &Context, msg: &Message) -
             match channel_id {
                 Some(channel_id) => {
                     let manager = songbird::get(ctx).await.expect("Songbird not initialized").clone();
+                    
                     manager.join(guild_id, channel_id).await.1?;
+                    tokio::spawn(async move {
+                        let mut backoff_seconds = 30;
+                        let handler = manager.get(guild_id).expect("No handler found");
+
+                        loop {
+                            sleep(Duration::from_secs(backoff_seconds)).await;
+                            if handler.lock().await.queue().is_empty() {
+                                manager.remove(guild_id).await.expect("Cannot leave");
+                                break;
+                            } else {
+                                backoff_seconds = backoff_seconds * 2;
+                            }
+                        }
+
+                    });
                 },
                 None => return command.command_error("You must be in a voice channel to use this command".to_owned()),
             }
