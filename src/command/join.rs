@@ -36,7 +36,7 @@ pub async fn join_channel(command: &dyn Command, ctx: &Context, msg: &Message) -
                         loop {
                             sleep(Duration::from_secs(backoff_seconds)).await;
                             if handler.lock().await.queue().is_empty() {
-                                manager.remove(guild_id).await.expect("Cannot leave");
+                                manager.leave(guild_id).await.expect("Cannot leave");
                                 break;
                             }
                         }

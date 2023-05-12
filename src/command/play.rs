@@ -45,8 +45,20 @@ impl Command for Play {
             None => return self.command_error(String::from("This command can only be used in a guild")),
         };
 
-        let manager = songbird::get(ctx).await.expect("Songbird not initialized").clone();
-        let handler = manager.get(guild_id).expect("No handler found");
+        let manager = songbird::get(ctx).await;
+        
+        if manager.is_none() {
+            return self.command_error(String::from("Songbird not initialized"));
+        }
+
+        let manager = manager.unwrap().clone();
+        let handler = manager.get(guild_id);
+        
+        if handler.is_none() {
+            return self.command_error(String::from("No handler found"));
+        }
+
+        let handler = handler.unwrap();
         let mut handler = handler.lock().await;
 
         let source =  Restartable::ytdl_search(search_string, true).await?;
