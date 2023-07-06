@@ -44,7 +44,7 @@ impl Command for Help {
         let mut embed = serenity::builder::CreateEmbed::default();
 
         embed
-            .title("Help - If you are seeing this, this repo is setup to autodeploy on a push to main using a webhook")
+            .title("Help")
             .description(commands)
             .color(0x90_EE_90); // You can set the desired color here
 
